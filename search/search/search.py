@@ -87,9 +87,6 @@ def depthFirstSearch(problem):
     understand the search problem that is being passed in:
 
     """
-    print("Start:", problem.getStartState())
-    print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
-    print("Start's successors:", problem.getSuccessors(problem.getStartState()))
 
     from util import Stack
 
