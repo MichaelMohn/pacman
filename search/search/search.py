@@ -18,6 +18,7 @@ Pacman agents (in searchAgents.py).
 """
 
 import util
+from util import Queue, PriorityQueue, Stack
 
 
 
@@ -115,21 +116,60 @@ def depthFirstSearch(problem):
         
     return []
 
-        
-        
-        
-
-
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    start = problem.getStartState()
+    if problem.isGoalState(start):
+        return []
+
+    frontier = Queue()
+    frontier.push((start, []))  
+    visited = set([start])
+
+    while not frontier.isEmpty():
+        state, path = frontier.pop()
+
+        if problem.isGoalState(state):
+            return path
+
+        for succ, action, step_cost in problem.getSuccessors(state):
+            if succ not in visited:
+                visited.add(succ)                 
+                frontier.push((succ, path + [action]))
+
+    return []
+
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    start = problem.getStartState()
+    if problem.isGoalState(start):
+        return []
+
+    frontier = PriorityQueue()
+    frontier.push((start, [], 0), 0)
+    visited = set()
+    best_cost = {start: 0}
+
+    while not frontier.isEmpty():
+        state, path, cost = frontier.pop()
+
+        if state in visited:
+            continue
+        visited.add(state)
+
+        if problem.isGoalState(state):
+            return path
+
+        for succ, action, step_cost in problem.getSuccessors(state):
+            new_cost = cost + step_cost
+            if succ not in best_cost or new_cost < best_cost[succ]:
+                best_cost[succ] = new_cost
+                frontier.push((succ, path + [action], new_cost), new_cost)
+
+    return []
 
 def nullHeuristic(state, problem=None):
     """
@@ -139,9 +179,35 @@ def nullHeuristic(state, problem=None):
     return 0
 
 def aStarSearch(problem, heuristic=nullHeuristic):
-    """Search the node that has the lowest combined cost and heuristic first."""
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    start = problem.getStartState()
+    if problem.isGoalState(start):
+        return []
+
+    frontier = PriorityQueue()
+    start_h = heuristic(start, problem)
+    frontier.push((start, [], 0), start_h)
+
+    best_g = {start: 0}
+    closed = set()
+
+    while not frontier.isEmpty():
+        state, path, g = frontier.pop()
+
+        if state in closed:
+            continue
+        closed.add(state)
+
+        if problem.isGoalState(state):
+            return path
+
+        for succ, action, step_cost in problem.getSuccessors(state):
+            new_g = g + step_cost
+            if succ not in best_g or new_g < best_g[succ]:
+                best_g[succ] = new_g
+                f = new_g + heuristic(succ, problem)
+                frontier.push((succ, path + [action], new_g), f)
+
+    return []
 
 
 # Abbreviations
