@@ -274,17 +274,130 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def expectimax(state, agentIndex, depth):
+            if depth == self.depth or state.isWin() or state.isLose():
+                return self.evaluationFunction(state)
+            numAgents = state.getNumAgents()
+            nextAgent = (agentIndex + 1) % numAgents
+            nextDepth = depth + 1 if nextAgent == 0 else depth
+
+            actions= state.getLegalActions(agentIndex)
+            if not actions:
+                return self.evaluationFunction(state)
+
+            if agentIndex == 0:
+                return max(expectimax(state.generateSuccessor(agentIndex, action), nextAgent, nextDepth) for action in actions)
+            else:
+                prob = 1.0/len(actions)
+                return sum(
+                    prob * expectimax(state.generateSuccessor(agentIndex, action), nextAgent, nextDepth)
+                    for action in actions
+                )
+        
+        legal = gameState.getLegalActions(0)
+        bestScore = float("-inf")
+        best_action = Directions
+        for action in legal:
+            succ = gameState.generateSuccessor(0, action)
+            score= expectimax(succ, 1, 0)
+            if score > bestScore:
+                bestScore, best_action = score, action
+        return best_action
+        
 
 def betterEvaluationFunction(currentGameState: GameState):
     """
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: 
+    - Start from the game score
+    - if the agent gets closer to the food, reward them. Penalize if they move away.
+    - Heavily penalize being too close to an active ghost.
+    - Reward getting near ghosts that can be eaten 
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Terminal states
+    if currentGameState.isWin():
+        return float('inf')
+    if currentGameState.isLose():
+        return float('-inf')
+
+    pos = currentGameState.getPacmanPosition()
+    food = currentGameState.getFood().asList()
+    capsules = currentGameState.getCapsules()
+    ghostStates = currentGameState.getGhostStates()
+
+    score = float(currentGameState.getScore())
+
+    foodCount = len(food)
+    if foodCount:
+        minFoodDist = min(manhattanDistance(pos, f) for f in food)
+        food_closeness = 1.0 / max(1, minFoodDist)   # closer food is better
+    else:
+        minFoodDist = 1
+        food_closeness = 0.0
+
+    
+    
+    capCount = len(capsules)
+    if capCount:
+        minCapDist = min(manhattanDistance(pos, c) for c in capsules)
+        cap_closeness = 1.0 / max(1, minCapDist)     # closer to capsules is (usually) good
+    else:
+        cap_closeness = 0.0
+
+    
+    
+    danger_penalty = 0.0
+    scared_reward = 0.0
+    imminent_death = False
+
+    for g in ghostStates:
+        d = manhattanDistance(pos, g.getPosition())
+        if g.scaredTimer > 0:
+            
+            
+            scared_reward += 1.0 / max(1, d)
+        else:
+            if d <= 1:
+                
+                
+                imminent_death = True
+            elif d == 2:
+                danger_penalty += 1.0
+            elif d == 3:
+                danger_penalty += 0.3
+
+    if imminent_death:
+        
+        
+        danger_penalty += 10.0
+
+   
+   
+    try:
+        mobility = len(currentGameState.getLegalActions(0))
+    except Exception:
+        mobility = 4  
+        
+
+    
+    
+    value = (
+        1.0   * score           
+        + 12.0 * food_closeness
+        + 4.0  * cap_closeness
+        - 4.0  * foodCount
+        - 12.0 * capCount
+        - 8.0  * danger_penalty
+        + 8.0  * scared_reward
+        + 0.5  * mobility
+    )
+
+    return value
+
+    
 
 # Abbreviation
 better = betterEvaluationFunction
