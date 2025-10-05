@@ -167,7 +167,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
 
             if agentIndex == 0:
-                # Pacman (maximize)
+                # Pacman
                 bestVal = float("-inf")
                 for action in state.getLegalActions(agentIndex):
                     successor = state.generateSuccessor(agentIndex, action)
@@ -175,11 +175,11 @@ class MinimaxAgent(MultiAgentSearchAgent):
                     bestVal = max(bestVal, val)
                 return bestVal
             else:
-                # Ghost (minimize)
+                # Ghost 
                 bestVal = float("inf")
                 for action in state.getLegalActions(agentIndex):
                     successor = state.generateSuccessor(agentIndex, action)
-                    # Next agent: wrap around to Pacman and increase depth if we finished all ghosts
+                    # Next agent
                     if agentIndex == numAgents - 1:
                         val = minimax(successor, depth + 1, 0)
                     else:
@@ -193,7 +193,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
         maxMove = None
 
         for action in legalMoves:
-            #run minimax on all
+            #run minimax
             successor = gameState.generateSuccessor(0, action)
             val = minimax(successor, 0, 1)
             if val > maxScore:
@@ -220,7 +220,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             numAgents = state.getNumAgents()
 
             if agentIndex == 0:
-                # Pacman (maximize)
+                # Pacman 
                 value = float("-inf")
                 for action in state.getLegalActions(agentIndex):
                     successor = state.generateSuccessor(agentIndex, action)
@@ -231,7 +231,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     alpha = max(alpha, value)
                 return value
             else:
-                # Ghosts (minimize)
+                # Ghosts 
                 value = float("inf")
                 for action in state.getLegalActions(agentIndex):
                     successor = state.generateSuccessor(agentIndex, action)
@@ -245,7 +245,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     beta = min(beta, value)
                 return value
 
-        # Root: Pacman moves, pick the best action
+        # Root
         alpha = float("-inf")
         beta = float("inf")
         bestVal = float("-inf")
@@ -343,7 +343,7 @@ def betterEvaluationFunction(currentGameState: GameState):
     capCount = len(capsules)
     if capCount:
         minCapDist = min(manhattanDistance(pos, c) for c in capsules)
-        cap_closeness = 1.0 / max(1, minCapDist)     # closer to capsules is (usually) good
+        cap_closeness = 1.0 / max(1, minCapDist)     # closer to capsules is good
     else:
         cap_closeness = 0.0
 
@@ -399,5 +399,5 @@ def betterEvaluationFunction(currentGameState: GameState):
 
     
 
-# Abbreviation
+
 better = betterEvaluationFunction
