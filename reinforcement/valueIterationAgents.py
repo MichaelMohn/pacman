@@ -158,7 +158,27 @@ class AsynchronousValueIterationAgent(ValueIterationAgent):
         ValueIterationAgent.__init__(self, mdp, discount, iterations)
 
     def runValueIteration(self):
-        "*** YOUR CODE HERE ***"
+        states = self.mdp.getStates()
+
+        for i in range(self.iterations):
+            mod = i % len(states)
+            state = states[mod]
+
+            if self.mdp.isTerminal(state):
+                continue
+
+            values = []
+            for action in self.mdp.getPossibleActions(state):
+                q = 0
+                for next_state, prob in self.mdp.getTransitionStatesAndProbs(state, action):
+                    reward = self.mdp.getReward(state, action, next_state)
+                    disc = self.discount * self.values[next_state]
+                    q = q + prob * (reward + disc)
+                
+                values.append(q)
+
+            if values:
+                self.values[state] = max(values)
 
 class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
     """
@@ -178,5 +198,46 @@ class PrioritizedSweepingValueIterationAgent(AsynchronousValueIterationAgent):
         ValueIterationAgent.__init__(self, mdp, discount, iterations)
 
     def runValueIteration(self):
-        "*** YOUR CODE HERE ***"
+        states = self.mdp.getStates()
+
+        pred = {}
+        for s in states:
+            pred[s] = set()
+
+        for s in states:
+            if self.mdp.isTerminal(s):
+                continue
+
+            for act in self.mdp.getPossibleActions(s):
+                for next, p in self.mdp.getTransitionStatesAndProbs(s, act):
+                    
+                    if p > 0:
+                        pred[next].add(s)
+
+        prio = util.PriorityQueue()
+        for s in states:
+            if self.mdp.isTerminal(s):
+                continue
+
+            vals = [self.computeQValueFromValues(s, a) for a in self.mdp.getPossibleActions(s)]
+            maxq = max(vals) if vals else 0
+            prio.update(s, -abs(self.values[s] - maxq))
+
+
+        for i in range(self.iterations):
+            if prio.isEmpty():
+                break
+
+            curstate = prio.pop()
+            if not self.mdp.isTerminal(curstate):
+                vals = [self.computeQValueFromValues(curstate, a) for a in self.mdp.getPossibleActions(curstate)]
+                self.values[curstate] = max(vals) if vals else 0
+
+            for p in pred[curstate]:
+                if self.mdp.isTerminal(p):
+                    continue
+                vals = [self.computeQValueFromValues(p, a) for a in self.mdp.getPossibleActions(p)]
+                maxq = max(vals) if vals else 0
+                if abs(self.values[p] - maxq) > self.theta:
+                    prio.update(p, -abs(self.values[p] - maxq))
 
