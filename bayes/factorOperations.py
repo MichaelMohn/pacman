@@ -176,17 +176,13 @@ def eliminateWithCallTracking(callTrackingList=None):
         newUnconditioned = set(factor.unconditionedVariables()) - {eliminationVariable}
         newConditioned = set(factor.conditionedVariables())
 
-        # --- 2. Get variable domain dict (same Bayes net) ---
         variableDomainsDict = factor.variableDomainsDict()
 
-        # --- 3. Create new factor without the elimination variable ---
         newFactor = Factor(newUnconditioned, newConditioned, variableDomainsDict)
 
-        # --- 4. For each assignment in the new factor ---
         for assignment in newFactor.getAllPossibleAssignmentDicts():
             totalProb = 0.0
 
-            # For each possible value of the eliminated variable
             for elimValue in variableDomainsDict[eliminationVariable]:
                 extendedAssignment = assignment.copy()
                 extendedAssignment[eliminationVariable] = elimValue
@@ -250,5 +246,24 @@ def normalize(factor):
                             str(factor))
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    total = 0
+    for assignment in factor.getAllPossibleAssignmentDicts():
+        total += factor.getProbability(assignment)
 
+    newUncond = set()
+    newCond = set(factor.conditionedVariables())
+
+    for var in factor.unconditionedVariables():
+        domainSize = len(factor.variableDomainsDict()[var])
+        if domainSize == 1:
+            newCond.add(var)
+        else:
+            newUncond.add(var)
+
+    newFactor = Factor(newUncond, newCond, factor.variableDomainsDict())
+
+    for assignment in newFactor.getAllPossibleAssignmentDicts():
+            prob = factor.getProbability(assignment) / total
+            newFactor.setProbability(assignment, prob)
+
+    return newFactor
