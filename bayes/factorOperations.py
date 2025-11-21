@@ -173,10 +173,10 @@ def eliminateWithCallTracking(callTrackingList=None):
         elim = non - {eliminationVariable}
 
 
-        newFactor = Factor(elim, set(factor.conditionedVariables()), factor.variableDomainsDict())
+        f = Factor(elim, set(factor.conditionedVariables()), factor.variableDomainsDict())
 
         dict = factor.variableDomainsDict()
-        possible = newFactor.getAllPossibleAssignmentDicts()
+        possible = f.getAllPossibleAssignmentDicts()
         for assignment in possible:
             p = 0
 
@@ -187,8 +187,8 @@ def eliminateWithCallTracking(callTrackingList=None):
                 p += factor.getProbability(extendedAssignment)
 
 
-            newFactor.setProbability(assignment, p)
-        return newFactor
+            f.setProbability(assignment, p)
+        return f
 
     return eliminate
 
