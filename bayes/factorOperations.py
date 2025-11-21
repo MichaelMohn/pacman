@@ -101,30 +101,26 @@ def joinFactors(factors):
                     "\n".join(map(str, factors)))
 
 
+    non = set()
+    cond = set()
+
     "*** YOUR CODE HERE ***"
-    unconditionedVars = set()
-    conditionedVars = set()
+    
+
     for factor in factors:
-        unconditionedVars |= set(factor.unconditionedVariables())
-        conditionedVars |= set(factor.conditionedVariables())
+        cond |= set(factor.conditionedVariables())
+        non |= set(factor.unconditionedVariables())
+        
+    cond -= non
+    joined = Factor(non, cond, factors[0].variableDomainsDict())
 
-    # If a variable is unconditioned in any factor, remove it from conditioned
-    conditionedVars -= unconditionedVars
-
-    # --- 2. Use the variable domain dictionary (same for all) ---
-    variableDomainsDict = factors[0].variableDomainsDict()
-
-    # --- 3. Create the resulting joined factor ---
-    joinedFactor = Factor(unconditionedVars, conditionedVars, variableDomainsDict)
-
-    # --- 4. Fill in probabilities ---
-    for assignment in joinedFactor.getAllPossibleAssignmentDicts():
-        prob = 1.0
+    for dict in joined.getAllPossibleAssignmentDicts():
+        prob = 1
         for factor in factors:
-            prob *= factor.getProbability(assignment)
-        joinedFactor.setProbability(assignment, prob)
+            prob *= factor.getProbability(dict)
 
-    return joinedFactor
+        joined.setProbability(dict, prob)
+    return joined
 
 
 def eliminateWithCallTracking(callTrackingList=None):
@@ -173,24 +169,25 @@ def eliminateWithCallTracking(callTrackingList=None):
                     "unconditionedVariables: " + str(factor.unconditionedVariables()))
 
         "*** YOUR CODE HERE ***"
-        newUnconditioned = set(factor.unconditionedVariables()) - {eliminationVariable}
-        newConditioned = set(factor.conditionedVariables())
+        non = set(factor.unconditionedVariables())
+        elim = non - {eliminationVariable}
 
-        variableDomainsDict = factor.variableDomainsDict()
 
-        newFactor = Factor(newUnconditioned, newConditioned, variableDomainsDict)
+        newFactor = Factor(elim, set(factor.conditionedVariables()), factor.variableDomainsDict())
 
-        for assignment in newFactor.getAllPossibleAssignmentDicts():
-            totalProb = 0.0
+        dict = factor.variableDomainsDict()
+        possible = newFactor.getAllPossibleAssignmentDicts()
+        for assignment in possible:
+            p = 0
 
-            for elimValue in variableDomainsDict[eliminationVariable]:
+            for e in dict[eliminationVariable]:
                 extendedAssignment = assignment.copy()
-                extendedAssignment[eliminationVariable] = elimValue
 
-                totalProb += factor.getProbability(extendedAssignment)
+                extendedAssignment[eliminationVariable] = e
+                p += factor.getProbability(extendedAssignment)
 
-            newFactor.setProbability(assignment, totalProb)
 
+            newFactor.setProbability(assignment, p)
         return newFactor
 
     return eliminate

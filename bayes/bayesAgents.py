@@ -97,33 +97,25 @@ def constructBayesNet(gameState):
     variableDomainsDict = {}
 
     "*** YOUR CODE HERE ***"
-    for housePos in gameState.getPossibleHouses():
-        for obsPos in gameState.getHouseWalls(housePos):
-            obsVar = OBS_VAR_TEMPLATE % obsPos
-            obsVars.append(obsVar)
+    variableDomainsDict[FOOD_HOUSE_VAR] = HOUSE_VALS
+    variableDomainsDict[GHOST_HOUSE_VAR] = HOUSE_VALS
 
-    # 2. Define edges according to the Bayes net structure
-    edges = [
-        (X_POS_VAR, FOOD_HOUSE_VAR),
-        (X_POS_VAR, GHOST_HOUSE_VAR),
-        (Y_POS_VAR, FOOD_HOUSE_VAR),
-        (Y_POS_VAR, GHOST_HOUSE_VAR),
-    ]
+    possible = gameState.getPossibleHouses()
+    for house in possible:
+        for pos in gameState.getHouseWalls(house):
+            obsVars.append(OBS_VAR_TEMPLATE % pos)
+
+    edges = [(X_POS_VAR, FOOD_HOUSE_VAR), (X_POS_VAR, GHOST_HOUSE_VAR), (Y_POS_VAR, FOOD_HOUSE_VAR), (Y_POS_VAR, GHOST_HOUSE_VAR)]
     for obsVar in obsVars:
         edges.append((FOOD_HOUSE_VAR, obsVar))
         edges.append((GHOST_HOUSE_VAR, obsVar))
 
-    # 3. Assign variable domains
     variableDomainsDict[X_POS_VAR] = X_POS_VALS
     variableDomainsDict[Y_POS_VAR] = Y_POS_VALS
-    variableDomainsDict[FOOD_HOUSE_VAR] = HOUSE_VALS
-    variableDomainsDict[GHOST_HOUSE_VAR] = HOUSE_VALS
-    for obsVar in obsVars:
-        variableDomainsDict[obsVar] = OBS_VALS
+    for var in obsVars:
+        variableDomainsDict[var] = OBS_VALS
 
-    variables = [X_POS_VAR, Y_POS_VAR] + HOUSE_VARS + obsVars
-    net = bn.constructEmptyBayesNet(variables, edges, variableDomainsDict)
-    return net, obsVars
+    return bn.constructEmptyBayesNet([X_POS_VAR, Y_POS_VAR] + HOUSE_VARS + obsVars, edges, variableDomainsDict), obsVars
 
 def fillCPTs(bayesNet, gameState):
     fillXCPT(bayesNet, gameState)
@@ -150,10 +142,19 @@ def fillYCPT(bayesNet, gameState):
 
     yFactor = bn.Factor([Y_POS_VAR], [], bayesNet.variableDomainsDict())
     "*** YOUR CODE HERE ***"
-    yFactor.setProbability({Y_POS_VAR: BOTH_TOP_VAL}, PROB_BOTH_TOP)
-    yFactor.setProbability({Y_POS_VAR: BOTH_BOTTOM_VAL}, PROB_BOTH_BOTTOM)
-    yFactor.setProbability({Y_POS_VAR: LEFT_TOP_VAL}, PROB_ONLY_LEFT_TOP)
-    yFactor.setProbability({Y_POS_VAR: LEFT_BOTTOM_VAL}, PROB_ONLY_LEFT_BOTTOM)
+
+    bt = {Y_POS_VAR: BOTH_TOP_VAL}
+    yFactor.setProbability(bt, PROB_BOTH_TOP)
+
+    bb = {Y_POS_VAR: BOTH_BOTTOM_VAL}
+    yFactor.setProbability(bb , PROB_BOTH_BOTTOM)
+
+    lt = {Y_POS_VAR: LEFT_TOP_VAL}
+    yFactor.setProbability(lt, PROB_ONLY_LEFT_TOP)
+
+    lb = {Y_POS_VAR: LEFT_BOTTOM_VAL}
+    yFactor.setProbability(lb, PROB_ONLY_LEFT_BOTTOM)
+
     bayesNet.setCPT(Y_POS_VAR, yFactor)
 
 def fillHouseCPT(bayesNet, gameState):
@@ -218,19 +219,18 @@ def fillObsCPT(bayesNet, gameState):
     bottomLeftPos, topLeftPos, bottomRightPos, topRightPos = gameState.getPossibleHouses()
 
     "*** YOUR CODE HERE ***"
-    housePositions = [bottomLeftPos, topLeftPos, bottomRightPos, topRightPos]
-    houseValues = [BOTTOM_LEFT_VAL, TOP_LEFT_VAL, BOTTOM_RIGHT_VAL, TOP_RIGHT_VAL]
+    houses = [bottomLeftPos, topLeftPos, bottomRightPos, topRightPos]
+    vals = [BOTTOM_LEFT_VAL, TOP_LEFT_VAL, BOTTOM_RIGHT_VAL, TOP_RIGHT_VAL]
 
-    # Iterate over every possible observation position (wall)
-    for housePos, houseVal in zip(housePositions, houseValues):
+    for housePos, houseVal in zip(houses, vals):
+
         for obsPos in gameState.getHouseWalls(housePos):
-            obsVar = OBS_VAR_TEMPLATE % obsPos
-
-            # Each observation depends on foodHouse and ghostHouse
-            obsFactor = bn.Factor([obsVar], [FOOD_HOUSE_VAR, GHOST_HOUSE_VAR],
+            var = OBS_VAR_TEMPLATE % obsPos
+            obsFactor = bn.Factor([var], [FOOD_HOUSE_VAR, GHOST_HOUSE_VAR],
                                    bayesNet.variableDomainsDict())
+            
 
-            # Fill the CPT
+
             for foodHouseVal in HOUSE_VALS:
                 for ghostHouseVal in HOUSE_VALS:
                     assignment = {
@@ -238,31 +238,29 @@ def fillObsCPT(bayesNet, gameState):
                         GHOST_HOUSE_VAR: ghostHouseVal
                     }
 
-                    # Determine which distribution to use
+                    p_red = PROB_FOOD_RED
+                    p_blue = 1 - PROB_FOOD_RED
+
                     if foodHouseVal == houseVal and ghostHouseVal == houseVal:
-                        # Both same → use food house distribution
-                        p_red = PROB_FOOD_RED
-                        p_blue = 1 - PROB_FOOD_RED
-                        p_none = 0.0
+                        p_none = 0
                     elif foodHouseVal == houseVal:
-                        p_red = PROB_FOOD_RED
-                        p_blue = 1 - PROB_FOOD_RED
-                        p_none = 0.0
+                        p_none = 0
                     elif ghostHouseVal == houseVal:
                         p_red = PROB_GHOST_RED
                         p_blue = 1 - PROB_GHOST_RED
-                        p_none = 0.0
+                        p_none = 0
                     else:
-                        p_red = 0.0
-                        p_blue = 0.0
-                        p_none = 1.0
+                        p_red = 0
+                        p_blue = 0
+                        p_none = 1
 
-                    # Assign probabilities for each observation value
-                    obsFactor.setProbability({**assignment, obsVar: RED_OBS_VAL}, p_red)
-                    obsFactor.setProbability({**assignment, obsVar: BLUE_OBS_VAL}, p_blue)
-                    obsFactor.setProbability({**assignment, obsVar: NO_OBS_VAL}, p_none)
+                    obsFactor.setProbability({**assignment, var: RED_OBS_VAL}, p_red)
+                    obsFactor.setProbability({**assignment, var: BLUE_OBS_VAL}, p_blue)
+                    obsFactor.setProbability({**assignment, var: NO_OBS_VAL}, p_none)
 
-            bayesNet.setCPT(obsVar, obsFactor)
+            
+            
+            bayesNet.setCPT(var, obsFactor)
 
 def getMostLikelyFoodHousePosition(evidence, bayesNet, eliminationOrder):
     """
